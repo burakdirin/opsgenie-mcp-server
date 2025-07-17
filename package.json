@@ -1,0 +1,67 @@
+{
+  "name": "opsgenie-mcp-server",
+  "version": "1.0.0",
+  "description": "A Model Context Protocol (MCP) server that provides comprehensive Opsgenie alert management capabilities",
+  "main": "./build/index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "bin": {
+    "opsgenie-mcp-server": "build/index.js"
+  },
+  "scripts": {
+    "build": "npm run lint && tsc && chmod 755 build/index.js",
+    "prepublishOnly": "npm run build",
+    "start": "node build/index.js",
+    "start:stdio": "node build/index.js --transport stdio",
+    "start:http": "node build/index.js --transport http --port 3000",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts *.json *.md",
+    "format:check": "prettier --check src/**/*.ts *.json *.md",
+    "type-check": "tsc --noEmit",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "build"
+  ],
+  "keywords": [
+    "opsgenie",
+    "mcp",
+    "model-context-protocol",
+    "alerts",
+    "monitoring",
+    "incident-management",
+    "typescript",
+    "cli"
+  ],
+  "author": "Burak Dirin",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/burakdirin/opsgenie-mcp-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/burakdirin/opsgenie-mcp-server/issues"
+  },
+  "homepage": "https://github.com/burakdirin/opsgenie-mcp-server#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.1",
+    "@types/express": "^5.0.3",
+    "commander": "^14.0.0",
+    "express": "^5.1.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/eslint": "^9.6.1",
+    "@types/node": "^24.0.14",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.5.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3"
+  }
+}
