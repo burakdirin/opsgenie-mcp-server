@@ -20,7 +20,10 @@ const RecipientSchema = z.object({
 });
 
 const CreateAlertSchema = z.object({
-  apiKey: z.string().describe('Opsgenie API key'),
+  apiKey: z
+    .string()
+    .optional()
+    .describe('Opsgenie API key (optional if OPSGENIE_API_KEY env var is set)'),
   message: z.string().describe('Message of the alert'),
   alias: z
     .string()
@@ -58,7 +61,10 @@ const CreateAlertSchema = z.object({
 });
 
 const ListAlertsSchema = z.object({
-  apiKey: z.string().describe('Opsgenie API key'),
+  apiKey: z
+    .string()
+    .optional()
+    .describe('Opsgenie API key (optional if OPSGENIE_API_KEY env var is set)'),
   query: z
     .string()
     .optional()
@@ -93,7 +99,10 @@ const ListAlertsSchema = z.object({
 });
 
 const AlertActionSchema = z.object({
-  apiKey: z.string().describe('Opsgenie API key'),
+  apiKey: z
+    .string()
+    .optional()
+    .describe('Opsgenie API key (optional if OPSGENIE_API_KEY env var is set)'),
   identifier: z.string().describe('Alert identifier (id, tiny id, or alias)'),
   identifierType: z
     .enum(['id', 'name', 'tiny'])
@@ -105,7 +114,10 @@ const AlertActionSchema = z.object({
 });
 
 const AddNoteSchema = z.object({
-  apiKey: z.string().describe('Opsgenie API key'),
+  apiKey: z
+    .string()
+    .optional()
+    .describe('Opsgenie API key (optional if OPSGENIE_API_KEY env var is set)'),
   identifier: z.string().describe('Alert identifier (id, tiny id, or alias)'),
   identifierType: z
     .enum(['id', 'name', 'tiny'])
@@ -117,7 +129,10 @@ const AddNoteSchema = z.object({
 });
 
 const AddDetailsSchema = z.object({
-  apiKey: z.string().describe('Opsgenie API key'),
+  apiKey: z
+    .string()
+    .optional()
+    .describe('Opsgenie API key (optional if OPSGENIE_API_KEY env var is set)'),
   identifier: z.string().describe('Alert identifier (id, tiny id, or alias)'),
   identifierType: z
     .enum(['id', 'name', 'tiny'])
@@ -132,7 +147,10 @@ const AddDetailsSchema = z.object({
 });
 
 const ListNotesLogsSchema = z.object({
-  apiKey: z.string().describe('Opsgenie API key'),
+  apiKey: z
+    .string()
+    .optional()
+    .describe('Opsgenie API key (optional if OPSGENIE_API_KEY env var is set)'),
   identifier: z.string().describe('Alert identifier (id, tiny id, or alias)'),
   identifierType: z
     .enum(['id', 'name', 'tiny'])
@@ -169,7 +187,13 @@ export function registerOpsgenieTools(server: McpServer) {
     async args => {
       try {
         const { apiKey, ...params } = args;
-        const response = await listAlerts(apiKey, params);
+        const effectiveApiKey = apiKey || process.env.OPSGENIE_API_KEY;
+        if (!effectiveApiKey) {
+          throw new Error(
+            'Opsgenie API key is required. Provide it via apiKey parameter or OPSGENIE_API_KEY environment variable.'
+          );
+        }
+        const response = await listAlerts(effectiveApiKey, params);
 
         return {
           content: [
@@ -205,7 +229,13 @@ export function registerOpsgenieTools(server: McpServer) {
     async args => {
       try {
         const { apiKey, ...payload } = args;
-        const response = await createAlert(apiKey, payload);
+        const effectiveApiKey = apiKey || process.env.OPSGENIE_API_KEY;
+        if (!effectiveApiKey) {
+          throw new Error(
+            'Opsgenie API key is required. Provide it via apiKey parameter or OPSGENIE_API_KEY environment variable.'
+          );
+        }
+        const response = await createAlert(effectiveApiKey, payload);
 
         return {
           content: [
@@ -236,8 +266,14 @@ export function registerOpsgenieTools(server: McpServer) {
     async args => {
       try {
         const { apiKey, identifier, identifierType = 'id', ...payload } = args;
+        const effectiveApiKey = apiKey || process.env.OPSGENIE_API_KEY;
+        if (!effectiveApiKey) {
+          throw new Error(
+            'Opsgenie API key is required. Provide it via apiKey parameter or OPSGENIE_API_KEY environment variable.'
+          );
+        }
         const response = await acknowledgeAlert(
-          apiKey,
+          effectiveApiKey,
           identifier,
           payload,
           identifierType
@@ -272,8 +308,14 @@ export function registerOpsgenieTools(server: McpServer) {
     async args => {
       try {
         const { apiKey, identifier, identifierType = 'id', ...payload } = args;
+        const effectiveApiKey = apiKey || process.env.OPSGENIE_API_KEY;
+        if (!effectiveApiKey) {
+          throw new Error(
+            'Opsgenie API key is required. Provide it via apiKey parameter or OPSGENIE_API_KEY environment variable.'
+          );
+        }
         const response = await closeAlert(
-          apiKey,
+          effectiveApiKey,
           identifier,
           payload,
           identifierType
@@ -308,8 +350,14 @@ export function registerOpsgenieTools(server: McpServer) {
     async args => {
       try {
         const { apiKey, identifier, identifierType = 'id', ...params } = args;
+        const effectiveApiKey = apiKey || process.env.OPSGENIE_API_KEY;
+        if (!effectiveApiKey) {
+          throw new Error(
+            'Opsgenie API key is required. Provide it via apiKey parameter or OPSGENIE_API_KEY environment variable.'
+          );
+        }
         const response = await listAlertNotes(
-          apiKey,
+          effectiveApiKey,
           identifier,
           params,
           identifierType
@@ -352,8 +400,14 @@ export function registerOpsgenieTools(server: McpServer) {
     async args => {
       try {
         const { apiKey, identifier, identifierType = 'id', ...payload } = args;
+        const effectiveApiKey = apiKey || process.env.OPSGENIE_API_KEY;
+        if (!effectiveApiKey) {
+          throw new Error(
+            'Opsgenie API key is required. Provide it via apiKey parameter or OPSGENIE_API_KEY environment variable.'
+          );
+        }
         const response = await addNoteToAlert(
-          apiKey,
+          effectiveApiKey,
           identifier,
           payload,
           identifierType
@@ -388,8 +442,14 @@ export function registerOpsgenieTools(server: McpServer) {
     async args => {
       try {
         const { apiKey, identifier, identifierType = 'id', ...params } = args;
+        const effectiveApiKey = apiKey || process.env.OPSGENIE_API_KEY;
+        if (!effectiveApiKey) {
+          throw new Error(
+            'Opsgenie API key is required. Provide it via apiKey parameter or OPSGENIE_API_KEY environment variable.'
+          );
+        }
         const response = await listAlertLogs(
-          apiKey,
+          effectiveApiKey,
           identifier,
           params,
           identifierType
@@ -432,8 +492,14 @@ export function registerOpsgenieTools(server: McpServer) {
     async args => {
       try {
         const { apiKey, identifier, identifierType = 'id', ...payload } = args;
+        const effectiveApiKey = apiKey || process.env.OPSGENIE_API_KEY;
+        if (!effectiveApiKey) {
+          throw new Error(
+            'Opsgenie API key is required. Provide it via apiKey parameter or OPSGENIE_API_KEY environment variable.'
+          );
+        }
         const response = await addDetailsToAlert(
-          apiKey,
+          effectiveApiKey,
           identifier,
           payload,
           identifierType

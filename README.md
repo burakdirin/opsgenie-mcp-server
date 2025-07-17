@@ -41,25 +41,47 @@ npm run build
 
 ### Transport Options
 
-The server supports multiple transport protocols:
+The server supports multiple transport protocols with flexible API key configuration:
 
-#### 1. Stdio Transport (Default)
+#### 1. Stdio Transport (Default) - For Desktop Integration
 
+**With Environment Variable:**
 ```bash
-# Default stdio transport for MCP clients
+export OPSGENIE_API_KEY="your-api-key-here"
 npm run start:stdio
 # or
 node build/index.js --transport stdio
 ```
 
-#### 2. HTTP Transport
-
+**With CLI Argument:**
 ```bash
-# HTTP transport for web applications and REST clients
+node build/index.js --transport stdio --api-key "your-api-key-here"
+```
+
+#### 2. HTTP Transport - For Web Applications and Hosted Deployment
+
+**Basic HTTP Server:**
+```bash
+# Start HTTP server (API key provided per-request)
 npm run start:http
 # or
 node build/index.js --transport http --port 3000
 ```
+
+**With Environment Variable:**
+```bash
+export OPSGENIE_API_KEY="your-api-key-here"
+node build/index.js --transport http --port 3000
+```
+
+**HTTP API Key Configuration:**
+
+When using HTTP transport, clients can provide API keys through multiple methods:
+
+- **Environment Variable**: `OPSGENIE_API_KEY=your-key`
+- **Custom Header**: `X-Opsgenie-API-Key: your-key`
+- **Authorization Header**: `Authorization: Bearer your-key`
+- **Query Parameter**: `?apiKey=your-key`
 
 HTTP endpoints:
 
@@ -69,7 +91,7 @@ HTTP endpoints:
 #### 3. Custom Port
 
 ```bash
-node build/index.js --transport http --port 8080
+node build/index.js --transport http --port 8080 --api-key "your-api-key-here"
 ```
 
 ### Command Line Options
@@ -81,10 +103,30 @@ Options:
   -V, --version           output the version number
   -t, --transport <type>  transport type (stdio|http) (default: "stdio")
   -p, --port <number>     port number for HTTP transport (default: "3000")
+  -a, --api-key <key>     Opsgenie API key (can also use OPSGENIE_API_KEY env var)
   -h, --help              display help for command
 ```
 
 ### Authentication
+
+The Opsgenie MCP server supports multiple ways to provide your API key for authentication:
+
+#### Option 1: Environment Variable (Recommended)
+```bash
+export OPSGENIE_API_KEY="your-api-key-here"
+opsgenie-mcp-server --transport stdio
+```
+
+#### Option 2: CLI Argument
+```bash
+opsgenie-mcp-server --transport stdio --api-key "your-api-key-here"
+```
+
+#### Option 3: Per-tool Parameter (Backwards Compatible)
+When using tools directly, you can still provide the API key as a parameter:
+```
+opsgenie_list_alerts: {"apiKey": "your-api-key-here"}
+```
 
 All Opsgenie API operations require an API key. You can obtain one from your Opsgenie account:
 
@@ -106,23 +148,25 @@ All Opsgenie API operations require an API key. You can obtain one from your Ops
 
 #### Using the API Key
 
-The API key must be provided with each tool call. Here are examples:
+With the improved API key handling, you now have several options:
 
-**Example 1: List Alerts**
+**Option 1: Set globally via environment variable (Recommended)**
+```bash
+export OPSGENIE_API_KEY="genie-api-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 ```
-Ask Cursor: "List my recent Opsgenie alerts"
-When prompted for API key, provide: genie-api-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
+Then use tools without specifying the API key:
+- "List my recent Opsgenie alerts"
+- "Create a high priority alert for database connection failure"
+- "Add a note to alert 12345 saying 'Investigating database connection issue'"
 
-**Example 2: Create Alert**
-```
-Ask Cursor: "Create a high priority alert for database connection failure with API key genie-api-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-```
+**Option 2: Provide API key per tool (Backwards compatible)**
+- "List alerts using API key genie-api-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+- "Create alert with API key genie-api-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 
-**Example 3: Add Note to Alert**
-```
-Ask Cursor: "Add a note to alert 12345 saying 'Investigating database connection issue' using API key genie-api-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-```
+**Option 3: Using hosted server (Users provide their own keys)**
+Users configure their client with their API key, and all tools work seamlessly:
+- "List my recent Opsgenie alerts" (API key from client configuration)
+- "Create a new high priority alert" (API key from client configuration)
 
 #### Security Best Practices
 
@@ -153,53 +197,111 @@ All tools require an Opsgenie API key for authentication.
 
 ## Integration with Cursor IDE
 
-To use this MCP server with Cursor IDE, you need to configure it in your Cursor MCP settings:
+To use this MCP server with Cursor IDE, you can configure it locally or connect to a hosted instance:
 
-### Method 1: Using the Cursor Settings UI (Recommended)
+### Local Installation Configuration
 
-1. Open Cursor IDE
-2. Press `Cmd/Ctrl + Shift + J` to open Cursor Settings
-3. Navigate to the **MCP** tab
-4. Click **"+ Add New MCP Server"**
-5. Fill in the configuration:
-   - **Name**: `opsgenie-mcp-server`
-   - **Type**: `stdio`
-   - **Command**: `npx opsgenie-mcp-server --transport stdio`
+#### Method 1: Using Environment Variable (Recommended)
 
-### Method 2: Manual Configuration File
+1. Set your API key as an environment variable:
+   ```bash
+   export OPSGENIE_API_KEY="your-api-key-here"
+   ```
 
-Create or edit the MCP configuration file:
+2. Configure in Cursor settings:
+   ```json
+   {
+     "mcpServers": {
+       "opsgenie-mcp-server": {
+         "command": "npx",
+         "args": ["-y", "opsgenie-mcp-server", "--transport", "stdio"],
+         "env": {
+           "OPSGENIE_API_KEY": "your-api-key-here"
+         }
+       }
+     }
+   }
+   ```
 
-**Location:**
-- **macOS/Linux**: `~/.cursor/mcp.json`
-- **Windows**: `%USERPROFILE%\.cursor\mcp.json`
+#### Method 2: Using CLI Argument
 
-**Configuration:**
 ```json
 {
   "mcpServers": {
     "opsgenie-mcp-server": {
       "command": "npx",
-      "args": ["-y", "opsgenie-mcp-server", "--transport", "stdio"]
+      "args": [
+        "-y", 
+        "opsgenie-mcp-server", 
+        "--transport", "stdio",
+        "--api-key", "your-api-key-here"
+      ]
     }
   }
 }
 ```
 
-### Method 3: Using Local Installation
+### Hosted Server Configuration
 
-If you've installed the package globally:
+When connecting to a hosted MCP server (HTTP transport), you can provide your API key through various methods:
 
+#### Option 1: Environment Variables
 ```json
 {
   "mcpServers": {
-    "opsgenie-mcp-server": {
-      "command": "opsgenie-mcp-server",
-      "args": ["--transport", "stdio"]
+    "opsgenie-hosted": {
+      "url": "https://your-server.com/mcp",
+      "env": {
+        "OPSGENIE_API_KEY": "your-api-key-here"
+      }
     }
   }
 }
 ```
+
+#### Option 2: Custom Headers
+```json
+{
+  "mcpServers": {
+    "opsgenie-hosted": {
+      "url": "https://your-server.com/mcp",
+      "headers": {
+        "X-Opsgenie-API-Key": "your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+#### Option 3: Authorization Header
+```json
+{
+  "mcpServers": {
+    "opsgenie-hosted": {
+      "url": "https://your-server.com/mcp",
+      "headers": {
+        "Authorization": "Bearer your-api-key-here"
+      }
+    }
+  }
+}
+```
+
+#### Option 4: Query Parameter
+```json
+{
+  "mcpServers": {
+    "opsgenie-hosted": {
+      "url": "https://your-server.com/mcp?apiKey=your-api-key-here"
+    }
+  }
+}
+```
+
+### Configuration File Locations
+
+**macOS/Linux**: `~/.cursor/mcp.json`
+**Windows**: `%USERPROFILE%\.cursor\mcp.json`
 
 ### Verification
 
@@ -212,6 +314,103 @@ After configuration:
 - "List my recent Opsgenie alerts"
 - "Create a new alert in Opsgenie for database connection failure"
 - "Show me notes for alert ID 12345"
+
+## Deploying as a Hosted Service
+
+You can deploy this MCP server as a hosted service to allow multiple users to connect with their own Opsgenie API keys:
+
+### Docker Deployment
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 3000
+CMD ["node", "build/index.js", "--transport", "http", "--port", "3000"]
+```
+
+```bash
+docker build -t opsgenie-mcp-server .
+docker run -p 3000:3000 opsgenie-mcp-server
+```
+
+### Vercel Deployment
+
+Create a `vercel.json` file:
+
+```json
+{
+  "functions": {
+    "api/mcp.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/mcp",
+      "dest": "/api/mcp.js"
+    }
+  ]
+}
+```
+
+Deploy:
+```bash
+vercel deploy
+```
+
+### Railway Deployment
+
+Create a `railway.toml` file:
+
+```toml
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+```
+
+### Client Configuration for Hosted Servers
+
+Once deployed, users can connect to your hosted server by configuring their MCP client:
+
+**Claude Desktop Configuration:**
+```json
+{
+  "mcpServers": {
+    "opsgenie": {
+      "url": "https://your-domain.com/mcp",
+      "headers": {
+        "X-Opsgenie-API-Key": "user-specific-api-key"
+      }
+    }
+  }
+}
+```
+
+**Cursor IDE Configuration:**
+```json
+{
+  "mcpServers": {
+    "opsgenie": {
+      "url": "https://your-domain.com/mcp",
+      "env": {
+        "OPSGENIE_API_KEY": "user-specific-api-key"
+      }
+    }
+  }
+}
+```
+
+This approach allows you to host a single instance that multiple users can connect to, each with their own Opsgenie credentials.
 
 ## Development
 

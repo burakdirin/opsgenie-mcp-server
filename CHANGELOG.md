@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-01-17
+
+### Added
+- **Configurable API Key Support**: Multiple ways to provide Opsgenie API key for enhanced flexibility
+  - CLI argument: `--api-key <key>` for command-line usage
+  - Environment variable: `OPSGENIE_API_KEY` for system-wide configuration
+  - Per-tool parameter: Backward compatible `apiKey` parameter (now optional)
+- **Enhanced HTTP Transport**: Multiple API key authentication methods
+  - Environment variable (`OPSGENIE_API_KEY`)
+  - Custom header (`X-Opsgenie-API-Key`)
+  - Authorization header (`Authorization: Bearer <key>`)
+  - Query parameter (`?apiKey=<key>`)
+- **Improved User Experience**: 
+  - Clear error messages when API key is missing
+  - Helpful console output showing API key configuration options
+  - Updated CLI help with new options
+
+### Changed
+- **Tool Schemas**: All 8 tools now have optional `apiKey` parameter with fallback to environment variable
+- **Documentation**: Comprehensive updates to README with authentication options and deployment scenarios
+- **API Key Resolution**: Smart fallback logic prioritizes parameter > environment variable
+
+### Security
+- **Multiple Authentication Methods**: Flexible API key configuration for different deployment scenarios
+- **Environment Variable Support**: Secure API key storage without hardcoding in scripts
+
+### Developer Experience
+- **Enhanced CLI**: New `--api-key` option for easier testing and development
+- **Better Error Handling**: Clear guidance when API key configuration is missing
+- **Deployment Flexibility**: Support for both desktop integration and hosted services
+
 ## [1.0.0] - 2025-01-17
 
 ### Added
