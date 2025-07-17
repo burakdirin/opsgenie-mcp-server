@@ -1,0 +1,23 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['build/index.js', '--transport', 'stdio'], env: { ...(config.apiKey ? { OPSGENIE_API_KEY: config.apiKey } : {}) } })
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - apiKey
+    properties:
+      apiKey:
+        type: string
+        description: Opsgenie API key
+      transport:
+        type: string
+        default: stdio
+        description: Transport type
+  exampleConfig:
+    apiKey: genie-api-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
