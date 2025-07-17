@@ -2,6 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/opsgenie-mcp-server.svg)](https://badge.fury.io/js/opsgenie-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![smithery badge](https://smithery.ai/badge/@burakdirin/opsgenie-mcp-server)](https://smithery.ai/server/@burakdirin/opsgenie-mcp-server)
 
 A Model Context Protocol (MCP) server that provides comprehensive Opsgenie alert management capabilities.
 
@@ -15,6 +16,14 @@ A Model Context Protocol (MCP) server that provides comprehensive Opsgenie alert
 - Built with TypeScript and the official MCP SDK
 
 ## Installation
+
+### Installing via Smithery
+
+To install opsgenie-mcp-server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@burakdirin/opsgenie-mcp-server):
+
+```bash
+npx -y @smithery/cli install @burakdirin/opsgenie-mcp-server --client claude
+```
 
 ### From npm (recommended)
 
