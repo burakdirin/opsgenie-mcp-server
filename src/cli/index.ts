@@ -10,7 +10,7 @@ export async function runCLI() {
   program
     .name('opsgenie-mcp-server')
     .description('Opsgenie MCP Server with multiple transport options')
-    .version('1.1.0')
+    .version('1.2.0')
     .option('-t, --transport <type>', 'transport type (stdio|http)', 'stdio')
     .option('-p, --port <number>', 'port number for HTTP transport', '3000')
     .option(
@@ -21,12 +21,10 @@ export async function runCLI() {
   program.parse();
   const options = program.opts();
 
-  // Set API key in environment if provided via CLI
   if (options.apiKey) {
     process.env.OPSGENIE_API_KEY = options.apiKey;
   }
 
-  // For stdio transport, API key is required
   if (options.transport === 'stdio' && !process.env.OPSGENIE_API_KEY) {
     console.error('Error: Opsgenie API key is required for stdio transport.');
     console.error('Provide it via:');
@@ -35,15 +33,16 @@ export async function runCLI() {
     process.exit(1);
   }
 
-  const port = parseInt(options.port);
-  const server = createServer();
+  const port = Number.parseInt(options.port, 10);
 
   switch (options.transport.toLowerCase()) {
-    case 'stdio':
+    case 'stdio': {
+      const server = createServer();
       await startStdioTransport(server);
       break;
+    }
     case 'http':
-      await startHttpTransport(server, port);
+      await startHttpTransport(port);
       break;
     default:
       console.error(`Unknown transport: ${options.transport}`);
