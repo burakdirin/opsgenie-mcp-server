@@ -1,86 +1,61 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import express from 'express';
-import { randomUUID } from 'node:crypto';
+import express, { type Express, type Request, type Response } from 'express';
+import { createServer } from '../server/setup.js';
 
-// Store transports by session ID
-const transports: Record<string, StreamableHTTPServerTransport> = {};
+function methodNotAllowed(res: Response): void {
+  res.status(405).json({
+    jsonrpc: '2.0',
+    error: {
+      code: -32000,
+      message: 'Method not allowed.',
+    },
+    id: null,
+  });
+}
 
-export async function startHttpTransport(
-  server: McpServer,
-  port: number = 3000
-) {
+export function createHttpApp(): Express {
   const app = express();
-  app.use(express.json({ limit: '50mb' }));
 
-  // Check if request is an initialize request
-  const isInitializeRequest = (body: unknown): boolean => {
-    return (body as { method?: string })?.method === 'initialize';
-  };
+  app.disable('x-powered-by');
+  app.use(express.json({ limit: '1mb' }));
 
-  // Middleware to extract API key from various sources
-  const extractApiKey = (req: express.Request): string | undefined => {
-    // Try different sources for API key
-    return (
-      (req.headers['x-opsgenie-api-key'] as string) ||
-      req.headers['authorization']?.replace('Bearer ', '') ||
-      (req.query.apiKey as string) ||
-      process.env.OPSGENIE_API_KEY
-    );
-  };
+  app.get('/', (_req, res) => {
+    res.json({
+      name: 'opsgenie-mcp-server',
+      status: 'ok',
+      transport: 'streamable-http',
+      endpoint: '/mcp',
+    });
+  });
 
-  app.all('/mcp', async (req, res) => {
-    // Extract API key for this request
-    const apiKey = extractApiKey(req);
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
 
-    // Set API key in environment for this request context
-    if (apiKey) {
-      process.env.OPSGENIE_API_KEY = apiKey;
-    }
+  app.post('/mcp', async (req: Request, res: Response) => {
+    const server = createServer();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
 
-    // Check for existing session ID
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
-    let transport: StreamableHTTPServerTransport;
+    let closed = false;
+    const close = async (): Promise<void> => {
+      if (closed) return;
+      closed = true;
+      await transport.close();
+      await server.close();
+    };
 
-    if (sessionId && transports[sessionId]) {
-      // Reuse existing transport
-      transport = transports[sessionId];
-    } else if (!sessionId && isInitializeRequest(req.body)) {
-      // New initialization request
-      transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
-        onsessioninitialized: (sessionId: string) => {
-          // Store the transport by session ID
-          transports[sessionId] = transport;
-        },
-      });
-
-      // Clean up transport when closed
-      transport.onclose = () => {
-        if (transport.sessionId) {
-          delete transports[transport.sessionId];
-        }
-      };
-
-      // Connect to the MCP server
-      await server.connect(transport);
-    } else {
-      // Invalid request
-      res.status(400).json({
-        jsonrpc: '2.0',
-        error: {
-          code: -32000,
-          message: 'Bad Request: No valid session ID provided',
-        },
-        id: null,
-      });
-      return;
-    }
+    res.once('close', () => {
+      void close();
+    });
 
     try {
+      await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
     } catch (error) {
-      console.error('Error handling request:', error);
+      console.error('Error handling MCP request:', error);
+
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: '2.0',
@@ -91,15 +66,27 @@ export async function startHttpTransport(
           id: null,
         });
       }
+
+      await close();
     }
   });
 
+  app.get('/mcp', (_req, res) => {
+    methodNotAllowed(res);
+  });
+
+  app.delete('/mcp', (_req, res) => {
+    methodNotAllowed(res);
+  });
+
+  return app;
+}
+
+export async function startHttpTransport(port: number = 3000): Promise<void> {
+  const app = createHttpApp();
+
   app.listen(port, () => {
-    console.error(`Opsgenie MCP Server running on HTTP port ${port}`);
-    console.error('API Key can be provided via:');
-    console.error('  - OPSGENIE_API_KEY environment variable');
-    console.error('  - X-Opsgenie-API-Key header');
-    console.error('  - Authorization: Bearer <key> header');
-    console.error('  - ?apiKey=<key> query parameter');
+    console.error(`Opsgenie MCP Server running at http://localhost:${port}/mcp`);
+    console.error('Set OPSGENIE_API_KEY in the environment before calling tools.');
   });
 }
